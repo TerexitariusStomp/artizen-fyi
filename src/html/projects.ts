@@ -1,6 +1,6 @@
 import type { Leaderboard } from '../artizen';
 import { funding, heatRanks, heatTd, moneyColumns, moneyHeaders, truncate } from '../format';
-import { board, boardEmpty, creatorLink, datatable, dtPlaceholder, escapeHtml, layout, namedLink, pageTitle, panel } from './layout';
+import { board, boardEmpty, datatable, dtPlaceholder, escapeHtml, layout, namedLink, pageTitle, panel } from './layout';
 
 export function renderProjects(data: Leaderboard, seasonParam: string | null): string {
   const empty = boardEmpty(data);
@@ -20,9 +20,6 @@ export function renderProjects(data: Leaderboard, seasonParam: string | null): s
         const logline = project.logline
           ? `<br><small class="text-muted">${escapeHtml(truncate(project.logline, 90))}</small>`
           : '';
-        const creator = project.creator
-          ? `<br><small class="text-muted">${creatorLink(project.creator)}</small>`
-          : '';
         const cells = cols
           .map((col) => {
             const colHeat = heat[String(col.field)];
@@ -30,7 +27,7 @@ export function renderProjects(data: Leaderboard, seasonParam: string | null): s
           })
           .join('');
         return `<tr${i < 100 ? ' data-top="1"' : ''}>
-          <td><strong>${namedLink(project.url, project.name)}</strong>${logline}${creator}</td>
+          <td><strong>${namedLink(project.url, project.name)}</strong>${logline}</td>
           ${cells}
         </tr>`;
       })

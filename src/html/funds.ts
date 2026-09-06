@@ -1,6 +1,6 @@
 import type { FundRow, Leaderboard } from '../artizen';
 import { fmtDate, truncate, usd } from '../format';
-import { board, boardEmpty, creatorLink, datatable, dtPlaceholder, escapeHtml, layout, namedLink, pageTitle, panel } from './layout';
+import { board, boardEmpty, datatable, dtPlaceholder, escapeHtml, layout, namedLink, pageTitle, panel } from './layout';
 
 export function renderFunds(data: Leaderboard, seasonParam: string | null): string {
   const empty = boardEmpty(data);
@@ -19,9 +19,6 @@ export function renderFunds(data: Leaderboard, seasonParam: string | null): stri
         const subtitle = fund.subtitle
           ? `<br><small class="text-muted">${escapeHtml(truncate(fund.subtitle, 90))}</small>`
           : '';
-        const curator = fund.curator
-          ? `<br><small class="text-muted">${creatorLink(fund.curator)}</small>`
-          : '';
         const inactive = fund.active === false ? '<br><span class="badge text-bg-secondary">Inactive</span>' : '';
         const created = fmtDate(fund.created_at, true);
         const extraCols = current
@@ -30,7 +27,7 @@ export function renderFunds(data: Leaderboard, seasonParam: string | null): stri
              <td class="text-end" data-order="${fund.raised ?? -1}">${usd(fund.raised)}</td>`
           : '';
         return `<tr>
-          <td><strong>${namedLink(fund.url, fund.name)}</strong>${subtitle}${curator}${inactive}</td>
+          <td><strong>${namedLink(fund.url, fund.name)}</strong>${subtitle}${inactive}</td>
           <td class="text-nowrap" data-order="${escapeHtml(String(fund.created_at ?? ''))}">${escapeHtml(created)}</td>
           <td class="text-end" data-order="${fund.season_total}">${usd(fund.season_total)}</td>
           ${extraCols}
