@@ -11,9 +11,12 @@ import {
   leftoverMatch,
   localProjectPath,
   mapSome,
+  seasonLabel,
+  seasonMatch,
   maybeNum,
   mediaUrl,
   num,
+  pickCurator,
   sortByDesc,
   sum,
   text,
@@ -90,6 +93,8 @@ export async function buildFund(client: Bubble, slug: string): Promise<FundPage 
   );
   const unallocated = num(row['Funding - current']) - slicedAvailable;
   const seasons = nestFundFunding(contribSeasons, matchedProjects, unallocated);
+  const sponsor = text(ext?.['lead sponsor (text)']);
+  const admins = await client.indexed('useraccount', ids((row['admins'] as unknown[]) || []));
 
   return {
     name: text(ext?.['full title']) || (text(row['name']) ?? ''),
@@ -97,7 +102,8 @@ export async function buildFund(client: Bubble, slug: string): Promise<FundPage 
     image: mediaUrl(row['cover image']),
     subtitle: text(ext?.['subtitle']),
     for_title: text(ext?.['for title']),
-    sponsor: text(ext?.['lead sponsor (text)']),
+    curator: pickCurator(Object.values(admins), sponsor),
+    sponsor,
     created_at: row['Created Date'],
     available: sum(seasons, (season) => num(season.available)),
     unlocked: sum(seasons, (season) => num(season.unlocked)),
@@ -138,7 +144,7 @@ function fundAwardProjects(
         drive_active: false,
         drive_number: null,
         drive_multiple: null,
-        season: meta?.title ?? `Season ${number}`,
+        season: meta?.title ?? seasonLabel(number),
         season_number: number as number,
         available: 0.0,
         unlocked: raised,
@@ -155,20 +161,26 @@ function nestFundFunding(
   const seasons = contribSeasons.map((season) => ({ ...season }));
   const known = seasons.map((season) => season.number);
   for (const project of matchedProjects) {
+    if (project.season_number == null) continue;
     if (known.some((n) => n == project.season_number)) continue;
 
     seasons.push({
       number: project.season_number,
-      title: project.season ?? `Season ${project.season_number}`,
+      title: seasonLabel(project.season_number, project.season),
       total: 0.0,
       count: 0,
     });
     known.push(project.season_number);
   }
+  if (!seasons.length && matchedProjects.length) {
+    seasons.push({ number: undefined, title: 'Season', total: 0.0, count: 0 });
+  }
   sortByDesc(seasons, (season) => season.number || 0);
 
-  const nested = seasons.map((season) => {
-    const seasonProjects = matchedProjects.filter((project) => project.season_number == season.number);
+  const nested = seasons.map((season, index) => {
+    const seasonProjects = matchedProjects.filter((project) =>
+      seasonMatch(project.season_number, season.number, index === 0),
+    );
     const drives: FundDriveNest[] = sortByDesc(
       groupBy(seasonProjects, (project) => project.drive ?? 'Drive').map(([name, projects]) => {
         const sample = projects[0];

@@ -128,6 +128,10 @@ a.text-dark, a.text-dark:hover { color: var(--ink) !important; }
   background: var(--paper);
   border: 1px solid var(--line);
 }
+.artizen-kind-creator {
+  background: var(--ink);
+  color: #fff;
+}
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -1972,6 +1976,27 @@ a.text-dark, a.text-dark:hover { color: var(--ink) !important; }
   margin: 0 0 0.4rem;
 }
 .artizen-ph-lead-short { width: 58%; }
+.artizen-ph-meta {
+  height: 0.85rem;
+  width: min(34rem, 95%);
+  border-radius: 0.35rem;
+  margin: 0.15rem 0 0.55rem;
+}
+.artizen-ph-by {
+  height: 1.05rem;
+  width: 9.5rem;
+  border-radius: 0.35rem;
+  margin: 0;
+}
+.artizen-ph-social {
+  display: inline-block;
+  height: 0.95rem;
+  width: 4.4rem;
+  border-radius: 0.3rem;
+  margin: 0;
+  vertical-align: middle;
+}
+.artizen-ph-social-short { width: 3.6rem; }
 .artizen-ph-tag {
   display: inline-block;
   height: 1.35rem;

@@ -1,11 +1,14 @@
 import { Artizen, type FundPage, type ProjectPage } from './artizen';
 import type { MatchIndex } from './artizen/types';
+import { creatorSlug } from './artizen/util';
 import faviconIco from './favicon.ico';
 import faviconSvg from './favicon.svg';
 import appleTouchIcon from './apple-touch-icon.png';
 import ogImage from './og.png';
 import {
   renderBoosts,
+  renderCreator,
+  renderCreatorPlaceholder,
   renderDetailPlaceholder,
   renderDrives,
   renderFund,
@@ -163,9 +166,28 @@ async function detailPage(artizen: Artizen, kind: DetailKind, slug: string, requ
         name: cached.name,
         lead: kind === 'fund' ? (cached as FundPage).subtitle : (cached as ProjectPage).logline,
         created_at: kind === 'fund' ? (cached as FundPage).created_at : undefined,
+        creator: kind === 'fund' ? (cached as FundPage).curator : (cached as ProjectPage).creator,
       }
     : await artizen.listedPreview(kind, slug);
   return html(renderDetailPlaceholder(kind, slug, preview));
+}
+
+async function creatorDetailPage(artizen: Artizen, raw: string, request: Request, url: URL): Promise<Response> {
+  const slug = creatorSlug(raw) || raw.trim();
+  if (!slug) return html(renderNotFound(), 404);
+  if (slug !== raw) {
+    url.pathname = `/creators/${encodeURIComponent(slug)}`;
+    return Response.redirect(url.toString(), 301);
+  }
+  const refresh = url.searchParams.has('refresh');
+  const season = url.searchParams.get('season');
+  const cached = await artizen.peekCreator(slug, season);
+  if (cached && !refresh) return html(renderCreator(cached, season));
+  if (url.searchParams.has('content') || request.headers.get('sec-fetch-mode') !== 'navigate') {
+    return detail(await artizen.loadCreator(slug, season, refresh), (data) => renderCreator(data, season));
+  }
+  const preview = cached ? { name: cached.name, lead: cached.bio } : await artizen.listedCreatorPreview(slug);
+  return html(renderCreatorPlaceholder(slug, preview, season));
 }
 
 export default {
@@ -269,6 +291,17 @@ export default {
     if (request.method === 'GET' && page) {
       const kind: DetailKind = page[1] === 'funds' ? 'fund' : 'project';
       return detailPage(artizen, kind, decodeURIComponent(page[2]), request, url);
+    }
+
+    const userAlias = path.match(/^\/users\/([^/]+)$/);
+    if (request.method === 'GET' && userAlias) {
+      url.pathname = `/creators/${userAlias[1]}`;
+      return Response.redirect(url.toString(), 301);
+    }
+
+    const creatorPage = path.match(/^\/creators\/([^/]+)$/);
+    if (request.method === 'GET' && creatorPage) {
+      return creatorDetailPage(artizen, decodeURIComponent(creatorPage[1]), request, url);
     }
 
     return html(renderNotFound(), 404);

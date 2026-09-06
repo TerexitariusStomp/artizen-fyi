@@ -1,5 +1,6 @@
 export { renderSearch } from './search';
 export { renderBoosts } from './boosts';
+export { renderCreator, renderCreatorPlaceholder } from './creator';
 export { renderDrives } from './drives';
 export { renderFund } from './fund';
 export { renderFunds } from './funds';

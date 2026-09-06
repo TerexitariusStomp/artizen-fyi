@@ -1,15 +1,11 @@
 import type { FundPage } from '../artizen';
-import { delimited, fmtDate, usd } from '../format';
-import { artizenLinks, driveBadges, escapeHtml, heroSplit, layout, namedLink, panel, sumField, treeRow } from './layout';
+import { fmtDate, usd } from '../format';
+import { artizenLinks, byline, creatorLink, driveBadges, escapeHtml, heroSplit, layout, namedLink, panel, sumField, treeRow } from './layout';
 
 export function renderFund(fund: FundPage): string {
-  const prize = fund.prize_usd
-    ? `<span class="badge text-bg-primary">Prize ${usd(fund.prize_usd)}</span>`
-    : fund.prize_art
-      ? `<span class="badge text-bg-primary">Prize ${delimited(fund.prize_art)} ART</span>`
-      : '';
   const fundingTable = fund.seasons.length ? fundFundingTable(fund) : '';
   const created = fmtDate(fund.created_at, true);
+  const inactive = fund.active === false ? '<div class="mb-2"><span class="badge text-bg-secondary">Inactive</span></div>' : '';
   return layout({
     title: fund.name,
     description: fund.subtitle || fund.for_title || `Artizen fund: ${fund.name}`,
@@ -21,9 +17,10 @@ export function renderFund(fund: FundPage): string {
         fund.name,
         `<h1>${escapeHtml(fund.name)}</h1>
           ${fund.subtitle ? `<p class="lead">${escapeHtml(fund.subtitle)}</p>` : ''}
-          ${fund.sponsor ? `<p>Lead sponsor: ${escapeHtml(fund.sponsor)}</p>` : ''}
+          ${byline(fund.curator)}
+          ${fund.sponsor && fund.sponsor !== fund.curator ? `<p>Lead sponsor: ${creatorLink(fund.sponsor)}</p>` : ''}
           ${created ? `<p class="small text-muted mb-2">Created ${escapeHtml(created)}</p>` : ''}
-          <div class="mb-2">${fund.active === false ? '<span class="badge text-bg-secondary me-1">Inactive</span>' : ''}${prize}</div>
+          ${inactive}
           ${artizenLinks(fund.artizen_url)}`,
       )}
       ${fundingTable}
@@ -91,6 +88,7 @@ function fundFundingTable(fund: FundPage): string {
                 hidden: !driveOpen,
                 label: `<span class="artizen-tree-label">
                     ${namedLink(project.url, project.name)}
+                    ${project.creator ? ` <small class="text-muted">· ${creatorLink(project.creator)}</small>` : ''}
                     ${project.hidden ? ' <span class="badge text-bg-secondary">hidden</span>' : ''}
                   </span>`,
                 cells: fundCells(

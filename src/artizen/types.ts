@@ -102,6 +102,7 @@ export type ProjectRow = {
 export type FundRow = {
   name: string;
   subtitle?: string;
+  curator?: string;
   url: string;
   season_total: number;
   last_contribution: unknown;
@@ -116,6 +117,7 @@ export type DetailPreview = {
   name: string;
   lead?: string;
   created_at?: unknown;
+  creator?: string;
 };
 
 export type Leaderboard = {
@@ -250,6 +252,7 @@ export type FundPage = {
   image?: string | null;
   subtitle?: string;
   for_title?: string;
+  curator?: string;
   sponsor?: string;
   created_at?: unknown;
   available: number;
@@ -452,6 +455,37 @@ export type SemanticScorer = {
   load(onProgress: (progress: number) => void): Promise<void>;
   score(input: ProjectMatchInput, fundIds: string[]): Promise<Map<string, number>>;
   dispose(): void;
+};
+
+export type CreatorProject = ProjectRow & {
+  available?: number;
+};
+
+export type CreatorFund = {
+  name: string;
+  url: string;
+  subtitle?: string;
+  created_at?: unknown;
+  active: unknown;
+  contrib_total: number;
+  unlocked: number;
+  available: number;
+  raised: number;
+};
+
+export type CreatorPage = {
+  slug: string;
+  name: string;
+  bio?: string;
+  image?: string | null;
+  website?: string;
+  twitter?: string;
+  instagram?: string;
+  points?: number;
+  seasons: Season[];
+  season: Season | null;
+  projects: CreatorProject[];
+  funds: CreatorFund[];
 };
 
 export type BoostHolder = {

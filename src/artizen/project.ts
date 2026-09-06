@@ -36,6 +36,8 @@ import {
   num,
   seasonFunding,
   projectUrl,
+  seasonLabel,
+  seasonMatch,
   sortByDesc,
   sum,
   text,
@@ -190,7 +192,7 @@ export async function buildProject(client: Bubble, slug: string): Promise<Projec
         : meta?.number;
     return {
       number,
-      title: meta?.title ?? `Season ${srow['season number']}`,
+      title: meta?.title ?? seasonLabel(number),
       ...funding,
     } satisfies ProjectFundingSeason;
   });
@@ -246,11 +248,12 @@ function nestProjectFunding(
 ): ProjectFundingSeason[] {
   const known = seasons.map((season) => season.number);
   for (const row of [...drives, ...matchingFunds]) {
+    if (row.season_number == null) continue;
     if (known.some((n) => n == row.season_number)) continue;
 
     seasons.push({
       number: row.season_number,
-      title: row.season ?? `Season ${row.season_number}`,
+      title: seasonLabel(row.season_number, row.season),
       sales: 0.0,
       venus: 0.0,
       match: 0.0,
@@ -259,11 +262,23 @@ function nestProjectFunding(
     });
     known.push(row.season_number);
   }
+  if (!seasons.length && (drives.length || matchingFunds.length)) {
+    seasons.push({
+      number: undefined,
+      title: 'Season',
+      sales: 0.0,
+      venus: 0.0,
+      match: 0.0,
+      prize: 0.0,
+      raised: 0.0,
+    });
+  }
   sortByDesc(seasons, (season) => season.number || 0);
 
-  return seasons.map((season) => {
-    const seasonDrives = drives.filter((drive) => drive.season_number == season.number);
-    const seasonFunds = matchingFunds.filter((fund) => fund.season_number == season.number);
+  return seasons.map((season, index) => {
+    const latest = index === 0;
+    const seasonDrives = drives.filter((drive) => seasonMatch(drive.season_number, season.number, latest));
+    const seasonFunds = matchingFunds.filter((fund) => seasonMatch(fund.season_number, season.number, latest));
     const named = seasonDrives.map((drive) => drive.name);
     const stubs = [...new Set(seasonFunds.map((fund) => fund.drive))].filter(
       (name) => name != null && !named.some((n) => n == name),

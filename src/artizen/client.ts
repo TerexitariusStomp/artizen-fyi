@@ -1,18 +1,21 @@
 import { Bubble } from './bubble';
+import { buildCreator } from './creator';
 import { buildBoosts, buildLeaderboard } from './leaderboard';
 import { buildFund } from './fund';
 import { buildProject } from './project';
 import { buildMatchIndex, MATCH_INDEX_KEY } from '../matching/index';
-import type { BoostsPage, DetailPreview, FundPage, Leaderboard, MatchIndex, ProjectPage } from './types';
-import { failed } from './util';
+import type { BoostsPage, CreatorPage, DetailPreview, FundPage, Leaderboard, MatchIndex, ProjectPage } from './types';
+import { creatorSlug, failed } from './util';
 
 const keys = {
-  leaderboard: (season: string | number) => `artizen/leaderboard/v36/${season}`,
+  leaderboard: (season: string | number) => `artizen/leaderboard/v37/${season}`,
   project: (slug: string) => `artizen/project/v47/${slug}`,
-  fund: (slug: string) => `artizen/fund/v10/${slug}`,
+  fund: (slug: string) => `artizen/fund/v11/${slug}`,
+  creator: (slug: string, season: string | number) => `artizen/creator/v3/${slug}/${season}`,
   boosts: 'artizen/boosts/v2',
   projects: 'artizen/project/v47/',
-  funds: 'artizen/fund/v10/',
+  funds: 'artizen/fund/v11/',
+  creators: 'artizen/creator/v3/',
   matching: MATCH_INDEX_KEY,
 };
 
@@ -46,11 +49,36 @@ export class Artizen {
     const current = await this.get<Leaderboard>(keys.leaderboard('current'));
     if (kind === 'fund') {
       const row = current?.funds?.find((item) => item.url === path);
-      if (row?.name) return { name: row.name, lead: row.subtitle, created_at: row.created_at };
+      if (row?.name) return { name: row.name, lead: row.subtitle, created_at: row.created_at, creator: row.curator };
     } else {
       const row = current?.projects?.find((item) => item.url === path);
-      if (row?.name) return { name: row.name, lead: row.logline };
+      if (row?.name) return { name: row.name, lead: row.logline, creator: row.creator };
     }
+  }
+
+  async peekCreator(slug: string, season?: string | number | null): Promise<CreatorPage | null> {
+    const hit = await this.get<CreatorPage>(keys.creator(slug, season ?? 'current'));
+    return hit?.name ? hit : null;
+  }
+
+  async loadCreator(slug: string, season?: string | number | null, refresh = false): Promise<CreatorPage | null> {
+    return this.cached(
+      keys.creator(slug, season ?? 'current'),
+      () => buildCreator(this.bubble, slug, season),
+      refresh ? 'refresh' : 'miss',
+      null,
+    );
+  }
+
+  async listedCreatorPreview(slug: string): Promise<DetailPreview | undefined> {
+    const current = await this.get<Leaderboard>(keys.leaderboard('current'));
+    const project = current?.projects?.find((item) => item.creator && creatorSlug(item.creator) === slug);
+    if (project?.creator) return { name: project.creator, lead: project.logline };
+    const fund = current?.funds?.find((item) => item.curator && creatorSlug(item.curator) === slug);
+    if (fund?.curator) return { name: fund.curator, lead: fund.subtitle };
+    const boosts = await this.get<BoostsPage>(keys.boosts);
+    const holder = boosts?.top?.find((item) => creatorSlug(item.name) === slug);
+    if (holder?.name) return { name: holder.name };
   }
 
   async boosts(): Promise<BoostsPage> {
@@ -98,8 +126,9 @@ export class Artizen {
 
     let dropped = await this.deleteByPrefix(keys.projects);
     dropped += await this.deleteByPrefix(keys.funds);
+    dropped += await this.deleteByPrefix(keys.creators);
 
-    const summary = `[Artizen] refreshed ${seasons.length} seasons, boosts ${boosts && !boosts.error ? 'ok' : 'failed'}, dropped ${dropped} project/fund stashes in ${Math.round((Date.now() - started) / 1000)}s`;
+    const summary = `[Artizen] refreshed ${seasons.length} seasons, boosts ${boosts && !boosts.error ? 'ok' : 'failed'}, dropped ${dropped} project/fund/creator stashes in ${Math.round((Date.now() - started) / 1000)}s`;
     console.log(summary);
     return summary;
   }

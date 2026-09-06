@@ -1,6 +1,6 @@
 import type { BoostsPage } from '../artizen';
 import { compactNum, delimited } from '../format';
-import { datatable, dtPlaceholder, escapeHtml, layout, panel } from './layout';
+import { creatorLink, datatable, dtPlaceholder, escapeHtml, layout, panel } from './layout';
 
 function pct(share: number): string {
   const p = share * 100;
@@ -33,7 +33,7 @@ export function renderBoosts(boosts: BoostsPage): string {
         const admin = holder.admin ? ' <span class="badge text-bg-secondary artizen-badge-sm">admin</span>' : '';
         return `<tr>
           <td>
-            <span class="artizen-holder">${avatar}<strong>${escapeHtml(holder.name)}</strong>${admin}</span>
+            <span class="artizen-holder">${avatar}<strong>${creatorLink(holder.name)}</strong>${admin}</span>
           </td>
           <td class="text-end" data-order="${holder.points}">${delimited(holder.points)}</td>
           <td class="text-end" data-order="${holder.share}">${pct(holder.share)}</td>

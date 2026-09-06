@@ -1,6 +1,6 @@
 import type { FundRow, Leaderboard, ProjectRow } from '../artizen';
-import { truncate } from '../format';
-import { escapeHtml, layout, note, pageTitle, panel } from './layout';
+import { isCreatorName, localCreatorPath } from '../artizen/util';
+import { escapeHtml, layout, note, pageTitle, panel, resultCard } from './layout';
 
 function haystack(...parts: unknown[]): string {
   return parts
@@ -22,20 +22,26 @@ function rank(query: string, name: string): number {
   return 2;
 }
 
-function resultCard(kind: 'Project' | 'Fund', name: string, url: string, detail?: string): string {
-  const sub = detail ? `<p class="text-muted small artizen-subtitle mb-0">${escapeHtml(truncate(detail, 120))}</p>` : '';
-  return `<a class="artizen-result card mb-3" href="${escapeHtml(url)}">
-    <div class="card-body">
-      <span class="badge artizen-kind-${kind.toLowerCase()} mb-2">${kind}</span>
-      <h2 class="artizen-result-title mb-1">${escapeHtml(name)}</h2>
-      ${sub}
-    </div>
-  </a>`;
+type CreatorHit = { name: string; projects: number; funds: number };
+
+function addCreator(map: Map<string, CreatorHit>, name: string | undefined, field: 'projects' | 'funds'): void {
+  if (!isCreatorName(name)) return;
+  const held = map.get(name) || { name, projects: 0, funds: 0 };
+  held[field] += 1;
+  map.set(name, held);
 }
 
-function resultCol(title: string, count: number, cards: string): string {
+function creatorSummary(hit: CreatorHit): string {
+  const parts = [
+    hit.projects ? `${hit.projects} project${hit.projects === 1 ? '' : 's'}` : '',
+    hit.funds ? `${hit.funds} fund${hit.funds === 1 ? '' : 's'}` : '',
+  ].filter(Boolean);
+  return parts.length ? `${parts.join(' · ')} this season` : '';
+}
+
+function resultCol(title: string, count: number, cards: string, wide: boolean): string {
   const body = cards || `<p class="text-muted mb-0">No matching ${title.toLowerCase()}.</p>`;
-  return `<div class="col-lg-6 mb-3">
+  return `<div class="${wide ? 'col-lg-4' : 'col-lg-6'} mb-3">
     ${panel(`<h2 class="artizen-panel-title">${escapeHtml(title)} (${count})</h2>${body}`)}
   </div>`;
 }
@@ -49,27 +55,53 @@ export function renderSearch(data: Leaderboard, query: string, seasonParam: stri
     : [];
   const funds = q
     ? [...data.funds]
-        .filter((row: FundRow) => matches(q, row.name, row.subtitle))
+        .filter((row: FundRow) => matches(q, row.name, row.subtitle, row.curator))
         .sort((a, b) => rank(q, a.name) - rank(q, b.name) || a.name.localeCompare(b.name))
     : [];
-  const heading = q
-    ? `Results for “${escapeHtml(q)}”`
-    : 'Search projects and funds';
+  const creatorCounts = new Map<string, CreatorHit>();
+  if (q) {
+    for (const row of data.projects) {
+      if (matches(q, row.creator)) addCreator(creatorCounts, row.creator, 'projects');
+    }
+    for (const row of data.funds) {
+      if (matches(q, row.curator)) addCreator(creatorCounts, row.curator, 'funds');
+    }
+  }
+  const creators = [...creatorCounts.values()].sort(
+    (a, b) =>
+      rank(q, a.name) - rank(q, b.name) ||
+      b.projects + b.funds - (a.projects + a.funds) ||
+      a.name.localeCompare(b.name),
+  );
+  const heading = q ? `Results for “${escapeHtml(q)}”` : 'Search projects, funds, and creators';
   const status = q
-    ? `${projects.length} project${projects.length === 1 ? '' : 's'}, ${funds.length} fund${funds.length === 1 ? '' : 's'}`
-    : 'Type to search projects and funds';
+    ? `${projects.length} project${projects.length === 1 ? '' : 's'}, ${funds.length} fund${funds.length === 1 ? '' : 's'}, ${creators.length} creator${creators.length === 1 ? '' : 's'}`
+    : 'Type to search projects, funds, and creators';
   const empty = !q
-    ? panel(note('Type a name in the search box to find projects and funds in this season.'))
+    ? panel(note('Type a name in the search box to find projects, funds, and creators in this season.'))
     : '';
+  const wide = creators.length > 0;
   const cols = q
     ? `<div class="row">
-        ${resultCol('Projects', projects.length, projects.map((p) => resultCard('Project', p.name, p.url, p.logline || p.creator)).join(''))}
-        ${resultCol('Funds', funds.length, funds.map((f) => resultCard('Fund', f.name, f.url, f.subtitle)).join(''))}
+        ${resultCol('Projects', projects.length, projects.map((p) => resultCard('Project', p.name, p.url, p.logline || p.creator)).join(''), wide)}
+        ${resultCol('Funds', funds.length, funds.map((f) => resultCard('Fund', f.name, f.url, f.subtitle || f.curator)).join(''), wide)}
+        ${
+          wide
+            ? resultCol(
+                'Creators',
+                creators.length,
+                creators
+                  .map((c) => resultCard('Creator', c.name, localCreatorPath(c.name), creatorSummary(c)))
+                  .join(''),
+                wide,
+              )
+            : ''
+        }
       </div>`
     : '';
   return layout({
     title: q ? `${q} · ${pageTitle(data)}` : `Search · ${pageTitle(data)}`,
-    description: 'Search Artizen projects and funds',
+    description: 'Search Artizen projects, funds, and creators',
     query: q,
     season: seasonParam,
     body: `

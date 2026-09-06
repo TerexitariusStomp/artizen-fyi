@@ -28,6 +28,7 @@ import {
   mapSome,
   maybeNum,
   mediaUrl,
+  pickCurator,
   num,
   seasonFunding,
   sortByDesc,
@@ -401,6 +402,10 @@ async function fundRows(client: Bubble, seasonId: string, { current = false } = 
     'fundextendedinfo',
     funds.map((fund) => fund['Extended info']),
   );
+  const accounts = await client.indexed(
+    'useraccount',
+    funds.flatMap((fund) => ids((fund['admins'] as unknown[]) || [])),
+  );
   const ranked = mapSome(funds, (fund) => {
     const id = String(fund['_id'] ?? '');
     const seasonTotal = num(totals[id]);
@@ -408,9 +413,15 @@ async function fundRows(client: Bubble, seasonId: string, { current = false } = 
 
     const slug = text(fund['Slug']) ?? id;
     const ext = byId(exts, fund['Extended info']);
+    const sponsor = text(ext?.['lead sponsor (text)']);
+    const curator = pickCurator(
+      ids((fund['admins'] as unknown[]) || []).map((adminId) => accounts[adminId]),
+      sponsor,
+    );
     const row: FundRow = {
       name: text(fund['name']) ?? '',
       subtitle: text(ext?.['subtitle']),
+      curator,
       url: localFundPath(slug),
       season_total: seasonTotal,
       last_contribution: lastAt[id],

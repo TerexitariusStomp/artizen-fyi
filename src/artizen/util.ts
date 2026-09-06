@@ -2,6 +2,7 @@ import type { Drive, Row } from './types';
 
 export const SITE_URL = 'https://artizen.fund';
 export const LEAD_CREATOR = 'Lead Creator\t(text)';
+export const USER_ACCOUNT = 'User account';
 
 export function num(value: unknown): number {
   if (value == null || value === '') return 0;
@@ -34,6 +35,20 @@ export function text(value: unknown): string | undefined {
   if (value == null || value === false) return undefined;
   const s = String(value).trim();
   return s || undefined;
+}
+
+/** Never interpolates a missing season number into "Season undefined". */
+export function seasonLabel(number?: unknown, name?: unknown): string {
+  const titled = text(name);
+  if (titled) return titled;
+  if (number != null && number !== false && number !== '') return `Season ${number}`;
+  return 'Season';
+}
+
+/** Row belongs on this season, or is an orphan folded into the latest season. */
+export function seasonMatch(rowNumber: unknown, seasonNumber: unknown, latest: boolean): boolean {
+  if (rowNumber == seasonNumber) return true;
+  return latest && rowNumber == null;
 }
 
 export function ids(values: unknown[]): string[] {
@@ -195,6 +210,55 @@ export function localProjectPath(slugOrId: unknown): string {
 
 export function localFundPath(slugOrId: unknown): string {
   return `/funds/${slugOrId}`;
+}
+
+export function creatorSlug(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function localCreatorPath(name: string): string {
+  const slug = creatorSlug(name);
+  return `/creators/${encodeURIComponent(slug || name.trim())}`;
+}
+
+export function isCreatorName(name?: string | null): name is string {
+  const value = text(name);
+  if (!value || value === 'Unnamed') return false;
+  return !/^0x[a-f0-9]{4}…/i.test(value);
+}
+
+export function isHouseAccount(row?: Row | null): boolean {
+  const name = text(row?.['name']);
+  if (!name) return true;
+  if (/^venus$/i.test(name)) return true;
+  return text(row?.['Role']) === 'Artizen admin';
+}
+
+/** First real fund admin, preferring the lead sponsor when that person is on the list. */
+export function pickCurator(admins: Array<Row | undefined | null>, sponsor?: string | null): string | undefined {
+  const people = admins.filter(
+    (row): row is Row => Boolean(row && isCreatorName(text(row['name'])) && !isHouseAccount(row)),
+  );
+  const sponsorName = isCreatorName(sponsor) ? text(sponsor) : undefined;
+  if (sponsorName && people.some((row) => text(row['name']) === sponsorName)) return sponsorName;
+  return text(people[0]?.['name']) || sponsorName;
+}
+
+export function creatorQuery(slug: string): string {
+  return slug.replace(/-/g, ' ').trim();
+}
+
+/** Longest slug word, so contains-searches still hit O'Brien from o-brien. */
+export function creatorNeedle(slug: string): string {
+  return creatorQuery(slug)
+    .split(/\s+/)
+    .filter(Boolean)
+    .reduce((best, word) => (word.length > best.length ? word : best), '');
 }
 
 export function mediaUrl(path: unknown): string | undefined {

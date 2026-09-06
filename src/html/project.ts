@@ -1,6 +1,6 @@
 import type { ProjectPage, ProjectSibling, ProjectSiblingFund, ProjectSubmission } from '../artizen';
 import { moneyCells, moneyColumns, moneyHeaders, truncate, usd } from '../format';
-import { artizenLinks, driveBadges, escapeHtml, heroSplit, layout, namedLink, panel, sumField, treeRow } from './layout';
+import { artizenLinks, byline, driveBadges, escapeHtml, heroSplit, layout, namedLink, panel, sumField, treeRow } from './layout';
 
 export function renderProject(project: ProjectPage): string {
   const tags = (project.tags || []).map((tag) => `<span class="badge text-bg-secondary me-1 mb-1">${escapeHtml(tag)}</span>`).join('');
@@ -19,6 +19,7 @@ export function renderProject(project: ProjectPage): string {
         project.name,
         `<h1>${escapeHtml(project.name)}</h1>
           ${project.logline ? `<p class="lead">${escapeHtml(project.logline)}</p>` : ''}
+          ${byline(project.creator)}
           ${tags ? `<div class="mb-2">${tags}</div>` : ''}
           ${artizenLinks(project.artizen_url)}`,
       )}

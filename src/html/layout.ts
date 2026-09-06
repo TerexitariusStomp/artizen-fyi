@@ -1,5 +1,6 @@
 import type { DetailPreview, Leaderboard } from '../artizen';
-import { fmtDate, usd } from '../format';
+import { isCreatorName, localCreatorPath } from '../artizen/util';
+import { fmtDate, truncate, usd } from '../format';
 import styles from '../styles.css';
 
 const MATCHING_CSS_START = '/* ARTIZEN_MATCHING_CSS_START */';
@@ -67,7 +68,7 @@ const TREE_SCRIPT = `
 </script>
 `;
 
-const DETAIL_POLL_SCRIPT = `
+export const DETAIL_POLL_SCRIPT = `
 <script>
 (function() {
   var path = location.pathname;
@@ -191,7 +192,7 @@ export function layout(opts: {
     .filter(Boolean)
     .join('\n  ');
   const js = [
-    '<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"></script><script>document.querySelectorAll(\'[data-bs-toggle="tooltip"]\').forEach(function(el){bootstrap.Tooltip.getOrCreateInstance(el);});(function(){var nav=document.querySelector(".artizen-nav");var q=document.getElementById("artizen-q");var long="Search projects and funds";function sync(){if(nav)document.documentElement.style.setProperty("--artizen-nav-height",nav.offsetHeight+"px");if(q)q.placeholder=window.matchMedia("(max-width: 767px)").matches?"Search":long;}sync();window.addEventListener("resize",sync);})();</script>',
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"></script><script>document.querySelectorAll(\'[data-bs-toggle="tooltip"]\').forEach(function(el){bootstrap.Tooltip.getOrCreateInstance(el);});(function(){var nav=document.querySelector(".artizen-nav");var q=document.getElementById("artizen-q");var long="Search projects, funds, and creators";function sync(){if(nav)document.documentElement.style.setProperty("--artizen-nav-height",nav.offsetHeight+"px");if(q)q.placeholder=window.matchMedia("(max-width: 767px)").matches?"Search":long;}sync();window.addEventListener("resize",sync);})();</script>',
     SEARCH_SCRIPT,
     opts.datatables
       ? '<script src="https://cdn.datatables.net/v/bs5/dt-3.0.2/datatables.min.js"></script>'
@@ -271,9 +272,9 @@ function nav(
     <a class="artizen-wordmark" href="${boardsHref}" aria-label="artizen.fyi"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span>artizen.fyi</span></a>
     <div class="artizen-nav-side artizen-nav-side-end">
       <form class="artizen-search" action="/search" method="get" role="search">
-        <label class="visually-hidden" for="artizen-q">Search projects and funds</label>
+        <label class="visually-hidden" for="artizen-q">Search projects, funds, and creators</label>
         <i class="bi bi-search" aria-hidden="true"></i>
-        <input id="artizen-q" type="search" name="q" placeholder="Search projects and funds" value="${escapeHtml(query || '')}" autocomplete="off">
+        <input id="artizen-q" type="search" name="q" placeholder="Search projects, funds, and creators" value="${escapeHtml(query || '')}" autocomplete="off">
         ${seasonField}
       </form>
     </div>
@@ -429,6 +430,9 @@ export function renderDetailPlaceholder(kind: 'project' | 'fund', slug: string, 
   const created = createdLabel
     ? `<p class="small text-muted mb-2">Created ${escapeHtml(createdLabel)}</p>`
     : '';
+  const by =
+    byline(preview?.creator) ||
+    `<p class="mb-2" aria-hidden="true"><span class="artizen-ph artizen-ph-by"></span></p>`;
   const tags =
     kind === 'project'
       ? `<div class="mb-2" aria-hidden="true"><span class="artizen-ph artizen-ph-tag"></span><span class="artizen-ph artizen-ph-tag artizen-ph-tag-mid"></span><span class="artizen-ph artizen-ph-tag artizen-ph-tag-short"></span></div>`
@@ -452,6 +456,7 @@ export function renderDetailPlaceholder(kind: 'project' | 'fund', slug: string, 
         <div class="artizen-hero-copy">
           ${heading}
           ${lead}
+          ${by}
           ${created}
           ${tags}
           <p class="mb-0"><a href="${escapeHtml(artizenUrl)}" target="_blank" rel="noopener">View on Artizen</a></p>
@@ -640,6 +645,35 @@ export function board(data: Leaderboard, tab: 'projects' | 'funds' | 'drives', s
 
 export function namedLink(url: string, name: string): string {
   return `<a href="${escapeHtml(url)}" class="text-dark">${escapeHtml(name)}</a>`;
+}
+
+export function creatorLink(name?: string | null): string {
+  const value = String(name ?? '').trim();
+  if (!isCreatorName(value)) return escapeHtml(value);
+  return namedLink(localCreatorPath(value), value);
+}
+
+export function byline(name?: string | null): string {
+  return name ? `<p class="mb-2">By ${creatorLink(name)}</p>` : '';
+}
+
+export function resultCard(kind: 'Project' | 'Fund' | 'Creator', name: string, url: string, detail?: string): string {
+  const sub = detail ? `<p class="text-muted small artizen-subtitle mb-0">${escapeHtml(truncate(detail, 120))}</p>` : '';
+  return `<a class="artizen-result card mb-3" href="${escapeHtml(url)}">
+    <div class="card-body">
+      <span class="badge artizen-kind-${kind.toLowerCase()} mb-2">${kind}</span>
+      <h2 class="artizen-result-title mb-1">${escapeHtml(name)}</h2>
+      ${sub}
+    </div>
+  </a>`;
+}
+
+export function refreshLinks(season?: string | null): string {
+  const qs = new URLSearchParams({ refresh: '1' });
+  if (season) qs.set('season', season);
+  return `<p class="mb-0 artizen-hero-links">
+    <a href="?${qs.toString()}" class="artizen-refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh</a>
+  </p>`;
 }
 
 export function artizenLinks(artizenUrl: string): string {
