@@ -121,15 +121,6 @@ function projectTable(projects: CreatorProject[], cols: ReturnType<typeof moneyC
   };
   return panel(`
     <h2 class="artizen-panel-title">Projects (${projects.length})</h2>
-    <div class="artizen-note">
-      <p>Sales excludes Venus artifact buys. Figures are for ${season ? escapeHtml(season.title) : 'this season'}${season?.current ? ' (current)' : ''}.</p>
-      <dl class="artizen-defs">
-        <div><dt>S+VS</dt><dd>Sales + Venus sales</dd></div>
-        <div><dt>S+VS+M</dt><dd>S + VS + Match</dd></div>
-        <div><dt>V</dt><dd>VS + Venus extras</dd></div>
-        <div><dt>Raised</dt><dd>S + V + M + P${cols.some((col) => col.field === 'bonus') ? ' + B' : ''}</dd></div>
-      </dl>
-    </div>
     <div class="table-responsive">
       <table class="table table-sm">
         <thead><tr>

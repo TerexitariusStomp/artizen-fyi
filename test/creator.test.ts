@@ -383,7 +383,8 @@ describe('creator pages', () => {
     expect(html).toContain('$4,708');
     expect(html).toContain('$400');
     expect(html).toContain('$2,000');
-    expect(html).toContain('Figures are for Season 7 (current).');
+    expect(html).not.toContain('Sales excludes Venus artifact buys');
+    expect(html).not.toContain('Figures are for Season 7');
     expect(html).toContain('https://stephenreid.net');
   });
 
