@@ -16,7 +16,6 @@ export function renderCreator(creator: CreatorPage, seasonParam?: string | null)
   const includeBonus = creator.projects.some((project) => Number(project.bonus) > 0);
   const cols = moneyColumns(includeBonus);
   const projectRaised = sumField(creator.projects, 'raised');
-  const fundRaised = current ? sumField(creator.funds, 'raised') : sumField(creator.funds, 'contrib_total');
   const counts = [
     creator.projects.length ? `${creator.projects.length} project${creator.projects.length === 1 ? '' : 's'}` : '',
     creator.funds.length ? `${creator.funds.length} fund${creator.funds.length === 1 ? '' : 's'}` : '',
@@ -25,7 +24,6 @@ export function renderCreator(creator: CreatorPage, seasonParam?: string | null)
   const meta = [
     counts.length ? escapeHtml(counts.join(' · ')) : '',
     projectRaised > 0 ? `${usd(projectRaised)} raised` : '',
-    fundRaised > 0 ? `${usd(fundRaised)} in funds` : '',
     creator.points ? `${delimited(creator.points)} boosts` : '',
   ]
     .filter(Boolean)
