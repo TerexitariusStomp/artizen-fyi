@@ -186,7 +186,7 @@ async function creatorDetailPage(artizen: Artizen, raw: string, request: Request
   if (url.searchParams.has('content') || request.headers.get('sec-fetch-mode') !== 'navigate') {
     return detail(await artizen.loadCreator(slug, season, refresh), (data) => renderCreator(data, season));
   }
-  const preview = cached ? { name: cached.name, lead: cached.bio } : await artizen.listedCreatorPreview(slug);
+  const preview = cached ? { name: cached.name, lead: cached.bio } : undefined;
   return html(renderCreatorPlaceholder(slug, preview, season));
 }
 

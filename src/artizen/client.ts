@@ -5,7 +5,7 @@ import { buildFund } from './fund';
 import { buildProject } from './project';
 import { buildMatchIndex, MATCH_INDEX_KEY } from '../matching/index';
 import type { BoostsPage, CreatorPage, DetailPreview, FundPage, Leaderboard, MatchIndex, ProjectPage } from './types';
-import { creatorSlug, failed } from './util';
+import { failed } from './util';
 
 const keys = {
   leaderboard: (season: string | number) => `artizen/leaderboard/v37/${season}`,
@@ -68,17 +68,6 @@ export class Artizen {
       refresh ? 'refresh' : 'miss',
       null,
     );
-  }
-
-  async listedCreatorPreview(slug: string): Promise<DetailPreview | undefined> {
-    const current = await this.get<Leaderboard>(keys.leaderboard('current'));
-    const project = current?.projects?.find((item) => item.creator && creatorSlug(item.creator) === slug);
-    if (project?.creator) return { name: project.creator };
-    const fund = current?.funds?.find((item) => item.curator && creatorSlug(item.curator) === slug);
-    if (fund?.curator) return { name: fund.curator };
-    const boosts = await this.get<BoostsPage>(keys.boosts);
-    const holder = boosts?.top?.find((item) => creatorSlug(item.name) === slug);
-    if (holder?.name) return { name: holder.name };
   }
 
   async boosts(): Promise<BoostsPage> {

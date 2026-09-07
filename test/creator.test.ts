@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Bubble } from '../src/artizen/bubble';
-import { Artizen } from '../src/artizen/client';
 import { buildCreator } from '../src/artizen/creator';
 import {
   LEAD_CREATOR,
@@ -511,35 +510,6 @@ describe('creator pages', () => {
     expect(html).toContain('Creators (1)');
     expect(html).toContain('href="/creators/ada-lovelace"');
     expect(html).toContain('1 fund this season');
-  });
-});
-
-describe('listedCreatorPreview', () => {
-  it('falls back to fund curators then boost holders without borrowing their copy', async () => {
-    const kv = {
-      async get(key: string) {
-        if (key === 'artizen/leaderboard/v37/current') {
-          return JSON.stringify({
-            projects: [{ creator: 'Ada Lovelace', logline: 'Analytical engines' }],
-            funds: [{ curator: 'Charles Babbage', subtitle: 'Difference engines' }],
-          });
-        }
-        if (key === 'artizen/boosts/v2') {
-          return JSON.stringify({ top: [{ name: 'Boost Only' }] });
-        }
-        return null;
-      },
-      async put() {},
-      async delete() {},
-      async list() {
-        return { keys: [], list_complete: true };
-      },
-    } as unknown as KVNamespace;
-
-    const artizen = new Artizen(kv);
-    expect(await artizen.listedCreatorPreview('ada-lovelace')).toEqual({ name: 'Ada Lovelace' });
-    expect(await artizen.listedCreatorPreview('charles-babbage')).toEqual({ name: 'Charles Babbage' });
-    expect(await artizen.listedCreatorPreview('boost-only')).toEqual({ name: 'Boost Only' });
   });
 });
 
