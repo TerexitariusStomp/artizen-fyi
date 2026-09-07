@@ -515,13 +515,13 @@ describe('creator pages', () => {
 });
 
 describe('listedCreatorPreview', () => {
-  it('falls back to fund curators then boost holders', async () => {
+  it('falls back to fund curators then boost holders without borrowing their copy', async () => {
     const kv = {
       async get(key: string) {
         if (key === 'artizen/leaderboard/v37/current') {
           return JSON.stringify({
-            projects: [],
-            funds: [{ curator: 'Ada Lovelace', subtitle: 'Analytical engines' }],
+            projects: [{ creator: 'Ada Lovelace', logline: 'Analytical engines' }],
+            funds: [{ curator: 'Charles Babbage', subtitle: 'Difference engines' }],
           });
         }
         if (key === 'artizen/boosts/v2') {
@@ -537,10 +537,8 @@ describe('listedCreatorPreview', () => {
     } as unknown as KVNamespace;
 
     const artizen = new Artizen(kv);
-    expect(await artizen.listedCreatorPreview('ada-lovelace')).toEqual({
-      name: 'Ada Lovelace',
-      lead: 'Analytical engines',
-    });
+    expect(await artizen.listedCreatorPreview('ada-lovelace')).toEqual({ name: 'Ada Lovelace' });
+    expect(await artizen.listedCreatorPreview('charles-babbage')).toEqual({ name: 'Charles Babbage' });
     expect(await artizen.listedCreatorPreview('boost-only')).toEqual({ name: 'Boost Only' });
   });
 });
