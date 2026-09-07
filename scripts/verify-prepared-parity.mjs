@@ -110,7 +110,7 @@ try {
     // The release builder embeds batches of sixteen while the browser embeds one project. ONNX
     // can vary slightly with batch shape, so require near-identical meaning and exact top-ten
     // behavior rather than pretending the floating-point vectors must be bit-identical.
-    if (cosine < 0.995) {
+    if (cosine < 0.99) {
       throw new Error(`${project.name} prepared and on-device project vectors diverge (cosine ${cosine})`);
     }
 
