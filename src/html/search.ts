@@ -39,9 +39,9 @@ function creatorSummary(hit: CreatorHit): string {
   return parts.length ? `${parts.join(' · ')} this season` : '';
 }
 
-function resultCol(title: string, count: number, cards: string, wide: boolean): string {
+function resultCol(title: string, count: number, cards: string): string {
   const body = cards || `<p class="text-muted mb-0">No matching ${title.toLowerCase()}.</p>`;
-  return `<div class="${wide ? 'col-lg-4' : 'col-lg-6'} mb-3">
+  return `<div class="col-lg-4 mb-3">
     ${panel(`<h2 class="artizen-panel-title">${escapeHtml(title)} (${count})</h2>${body}`)}
   </div>`;
 }
@@ -80,23 +80,17 @@ export function renderSearch(data: Leaderboard, query: string, seasonParam: stri
   const empty = !q
     ? panel(note('Type a name in the search box to find projects, funds, and creators in this season.'))
     : '';
-  const wide = creators.length > 0;
   const cols = q
     ? `<div class="row">
-        ${resultCol('Projects', projects.length, projects.map((p) => resultCard('Project', p.name, p.url, p.logline || p.creator)).join(''), wide)}
-        ${resultCol('Funds', funds.length, funds.map((f) => resultCard('Fund', f.name, f.url, f.subtitle || f.curator)).join(''), wide)}
-        ${
-          wide
-            ? resultCol(
-                'Creators',
-                creators.length,
-                creators
-                  .map((c) => resultCard('Creator', c.name, localCreatorPath(c.name), creatorSummary(c)))
-                  .join(''),
-                wide,
-              )
-            : ''
-        }
+        ${resultCol('Projects', projects.length, projects.map((p) => resultCard('Project', p.name, p.url, p.logline || p.creator)).join(''))}
+        ${resultCol('Funds', funds.length, funds.map((f) => resultCard('Fund', f.name, f.url, f.subtitle || f.curator)).join(''))}
+        ${resultCol(
+          'Creators',
+          creators.length,
+          creators
+            .map((c) => resultCard('Creator', c.name, localCreatorPath(c.name), creatorSummary(c)))
+            .join(''),
+        )}
       </div>`
     : '';
   return layout({

@@ -461,6 +461,14 @@ describe('creator pages', () => {
     expect(fundHero).not.toContain('By ');
   });
 
+  it('shows an empty creators column when no people match', () => {
+    const html = renderSearch(emptyBoard, 'Marei', null);
+    expect(html).toContain('Creators (0)');
+    expect(html).toContain('No matching creators.');
+    expect(html).toContain('Projects (0)');
+    expect(html).toContain('Funds (0)');
+  });
+
   it('adds matching creators to search results', () => {
     const html = renderSearch(
       {
